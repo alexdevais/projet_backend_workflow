@@ -6,6 +6,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 50
+      start_period: 30s
 
     container_name: mysql_container
     restart: unless-stopped
