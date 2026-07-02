@@ -1,0 +1,56 @@
+name: Backend-CI
+
+on:
+  push:
+    branches: ["master"]
+
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du repo
+        uses: actions/checkout@v6
+        # configuration du fichier .env avec les secrets
+      - name: Configuration du fichier .env de test
+        run: |
+          echo "MYSQL_DATABASE=${{secrets.MYSQL_DATABASE}}" >> .env
+          echo "MYSQL_ROOT_PASSWORD=${{secrets.MYSQL_ROOT_PASSWORD}}" >> .env
+          echo "MYSQL_USER=${{MYSQL_USER}}" >> .env
+          echo "MYSQL_PASSWORD=${{MYSQL_PASSWORD}}" >> .env
+      # lancement des containers docker avec le .env fourni
+      - name: Lancement des tests unitaires
+        run: |
+          docker compose run --entrypoint "gradle test --no-deamon" backend
+
+      # nettoyage des containers docker peu importe si les tests ont réussi
+      - name: Nettoyage des containers après exécution
+        if: always()
+        run: docker compose down -v
+
+  # déploiement si les tests on réussi
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout du repo
+        uses: actions/checkout@v6
+
+      - name: Configuration du fichier .env de prod
+        run: |
+          echo "MYSQL_DATABASE=${{secrets.MYSQL_DATABASE}}" >> .env
+          echo "MYSQL_ROOT_PASSWORD=${{secrets.MYSQL_ROOT_PASSWORD}}" >> .env
+          echo "MYSQL_USER=${{MYSQL_USER}}" >> .env
+          echo "MYSQL_PASSWORD=${{MYSQL_PASSWORD}}" >> .env
+      - name: Déplloiement de docker
+        run: |
+          docker compose up -d --build
+
+      - name: Nettoyage des containers après exécution
+        if: always()
+        run: docker compose down -v
