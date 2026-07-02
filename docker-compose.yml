@@ -5,7 +5,7 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 50
 
     container_name: mysql_container
     restart: unless-stopped

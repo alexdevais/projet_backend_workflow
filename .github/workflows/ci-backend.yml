@@ -3,6 +3,7 @@ name: Backend-CI
 on:
   push:
     branches: ["master"]
+
   pull_request:
     branches: ["master"]
 
@@ -13,27 +14,24 @@ jobs:
     steps:
       - name: Checkout du repo
         uses: actions/checkout@v6
-
+        # configuration du fichier .env avec les secrets
       - name: Configuration du fichier .env de test
         run: |
-          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
-          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
-          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
-          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
+          echo "MYSQL_DATABASE=${{secrets.MYSQL_DATABASE}}" >> .env
+          echo "MYSQL_ROOT_PASSWORD=${{secrets.MYSQL_ROOT_PASSWORD}}" >> .env
+          echo "MYSQL_USER=${{secrets.MYSQL_USER}}" >> .env
+          echo "MYSQL_PASSWORD=${{secrets.MYSQL_PASSWORD}}" >> .env
+      # lancement des containers docker avec le .env fourni
+      - name: Lancement des tests unitaires
+        run: |
+          docker compose run --entrypoint "gradle test --no-deamon" backend
 
-      # 1. On build d'abord l'image du backend proprement (SANS exécuter de tests dans le Dockerfile)
-      - name: Build des images Docker
-        run: docker compose build backend
-
-      # 2. On lance les tests. Grâce au "depends_on", Docker va démarrer MySQL,
-      # attendre qu'il soit HEALTHY, puis exécuter les tests dans le backend connecté.
-      - name: Lancement des tests d'intégration avec la DB
-        run: docker compose run --entrypoint "gradle test --no-daemon" backend
-
+      # nettoyage des containers docker peu importe si les tests ont réussi
       - name: Nettoyage des containers après exécution
         if: always()
         run: docker compose down -v
 
+  # déploiement si les tests on réussi
   deploy:
     runs-on: ubuntu-latest
     needs: test
@@ -45,17 +43,14 @@ jobs:
 
       - name: Configuration du fichier .env de prod
         run: |
-          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
-          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
-          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
-          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
+          echo "MYSQL_DATABASE=${{secrets.MYSQL_DATABASE}}" >> .env
+          echo "MYSQL_ROOT_PASSWORD=${{secrets.MYSQL_ROOT_PASSWORD}}" >> .env
+          echo "MYSQL_USER=${{secrets.MYSQL_USER}}" >> .env
+          echo "MYSQL_PASSWORD=${{secrets.MYSQL_PASSWORD}}" >> .env
+      - name: Déplloiement de docker
+        run: |
+          docker compose up -d --build
 
-      - name: Déploiement de docker
-        run: docker compose up -d --build
-
-      # ⚠️ Attention ici : Si tu fais un "down -v" juste après le "up -d",
-      # ton application s'éteint immédiatement après avoir démarré !
-      # Enlève cette étape si ce runner est censé héberger ton application en continu.
       - name: Nettoyage des containers après exécution
         if: always()
         run: docker compose down -v
