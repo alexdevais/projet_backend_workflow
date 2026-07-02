@@ -21,7 +21,7 @@ jobs:
           echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
           echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
 
-      - name: Lancement du Docker OUIZUEOAIEU compose
+      - name: Lancement du Docker compose
         run: docker compose up -d --build
 
       - name: Pause pour le démarrage des services
@@ -33,6 +33,9 @@ jobs:
           # Cette ligne fait planter le pipeline si un conteneur est arrêté ou unhealthy
           docker compose ps | grep -E "unhealthy|exited" && exit 1 || echo "Tous les conteneurs sont lancés et sains !"
 
+      - name: Nettoyage
+        if: always()
+        run: docker compose down -v
 
   deploy:
     runs-on: ubuntu-latest
