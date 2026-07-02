@@ -42,9 +42,9 @@ jobs:
           echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
 
       # On lance l'environnement complet pour exécuter les tests unitaires / intégration
-      - name: Run Tests with Docker Compose
+      - name: Run tests via Docker Compose
         run: |
-          docker compose up --build --exit-code-from backend
+            docker compose run backend ./gradlew test
 
       - name: Clean up Docker
         run: |
