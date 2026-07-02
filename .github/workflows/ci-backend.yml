@@ -21,7 +21,7 @@ jobs:
           echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
           echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
 
-      - name: Lancement du Docker compose
+      - name: Lancement du Docker OUIZUEOAIEU compose
         run: docker compose up -d --build
 
       - name: Pause pour le démarrage des services
