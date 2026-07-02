@@ -21,11 +21,8 @@ jobs:
           echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
           echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
 
-      - name: Lancement de MySQL
-        run: docker compose up -d mysqldb
-
-      - name: Exécution des tests
-        run: docker compose run --rm backend
+      - name: Lancement du coker compose
+        run: docker compose up -d --build
 
       - name: Nettoyage
         if: always()
