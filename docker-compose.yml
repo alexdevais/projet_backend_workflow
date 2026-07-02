@@ -11,24 +11,22 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     healthcheck:
-      # 💡 Ajout de l'utilisateur root et du mot de passe pour éviter le "Access Denied" dans les logs
       test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}", "--silent" ]
       interval: 5s
       timeout: 5s
       retries: 50
-      start_period: 30s
+      start_period: 15s
     volumes:
       - mysql_data:/var/lib/mysql
 
   backend:
     build:
       context: .
-      # 💡 Retrait de "target: test" pour que Docker build l'image normalement
     ports:
       - "8080:8080"
     depends_on:
       mysqldb:
-        condition: service_started # ✅ Parfait, le backend n'attend plus le feu vert du healthcheck pour se lancer
+        condition: service_healthy # 💡 Le backend attendra VRAIMENT que MySQL soit prêt
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/${MYSQL_DATABASE}?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
