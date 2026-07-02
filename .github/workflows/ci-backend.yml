@@ -47,6 +47,7 @@ jobs:
             docker compose run backend ./gradlew test
 
       - name: Clean up Docker
+        if: always()
         run: |
           docker compose down -v
 
