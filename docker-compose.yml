@@ -20,17 +20,28 @@ services:
       - mysql_data:/var/lib/mysql
 
   backend:
+    container_name: spring_boot
     build:
       context: .
     ports:
       - "8080:8080"
     depends_on:
       mysqldb:
-        condition: service_healthy # 💡 Le backend attendra VRAIMENT que MySQL soit prêt
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb:3306/${MYSQL_DATABASE}?allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
 
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime_kuma_container
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
+
 volumes:
   mysql_data:
+  uptime_kuma_data:
