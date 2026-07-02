@@ -7,20 +7,33 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build-and-test:
+  # ==========================================
+  # JOB 1 : LA COMPILATION (BUILD)
+  # ==========================================
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Récupérer le code du dépôt
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      # 2. Configurer l'environnement Docker Buildx (pour une gestion avancée du cache)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Créer un fichier .env temporaire pour Docker Compose
-      # GitHub Actions a besoin de ces variables pour valider la syntaxe du docker-compose.yml
+      # On compile uniquement l'application (par exemple la phase 'build' du Dockerfile)
+      - name: Build Docker Image
+        run: |
+          docker compose build --no-cache backend
+
+  # ==========================================
+  # JOB 2 : L'EXÉCUTION DES TESTS
+  # ==========================================
+  test:
+    runs-on: ubuntu-latest
+    needs: build # 💡 Bloque les tests si la compilation (Build) échoue
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Create temporary .env file
         run: |
           echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
@@ -28,47 +41,25 @@ jobs:
           echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
           echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
 
-      # 4. Build des images et exécution des tests (grâce à ton Dockerfile multi-stage)
-      - name: Build and Test with Docker Compose
+      # On lance l'environnement complet pour exécuter les tests unitaires / intégration
+      - name: Run Tests with Docker Compose
         run: |
-          docker compose build --no-cache
+          docker compose up --build --exit-code-from backend
 
-      # 5. Optionnel : Si tu veux vérifier que l'ensemble s'allume bien en CI
-      - name: Verify Services Start
-        run: |
-          docker compose up -d
-          # On attend un peu pour laisser le healthcheck de MySQL et Spring Boot passer
-          sleep 30
-          docker compose ps
-          docker compose logs backend
-      # 6. On vide les containers pour le test et de build
-      - name: Empty docker
+      - name: Clean up Docker
         run: |
           docker compose down -v
-  # 7. Phase de déploiement
+
+  # ==========================================
+  # JOB 3 : LE SIMULACRE DE DÉPLOIEMENT
+  # ==========================================
   deploy:
     runs-on: ubuntu-latest
-    needs: build-and-test
-
+    needs: test # 💡 Bloque le déploiement si un seul test échoue
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Simuler la connexion SSH
-        run: |
-          echo "🔐 Connexion SSH réussie au serveur virtuel de production (ip: 192.168.1.100)..."
-          sleep 2
-
-      - name: Simuler la mise à jour du code (Git Pull)
-        run: |
-          echo "📥 Récupération de la dernière version depuis la branche ${{ github.ref_name }}..."
-          sleep 2
-          echo "✅ Code mis à jour avec succès."
-
       - name: Simuler le déploiement Docker
         run: |
-          echo "🐳 Arrêt de l'ancienne stack Docker..."
-          echo "🚀 Lancement de Docker Compose (Backend + MySQL + Uptime Kuma)..."
-          sleep 3
-          echo "🟢 APPLICATION EN LIGNE ET SÉCURISÉE !"
-
+          echo "🔐 Connexion SSH virtuelle..."
+          echo "🐳 Arrêt de l'ancienne version..."
+          echo "🚀 Lancement de la nouvelle stack (Backend + MySQL + Uptime Kuma)..."
+          echo "🟢 DÉPLOIEMENT TERMINÉ AVEC SUCCÈS !"
